@@ -20,7 +20,7 @@ async def create_transaction(
     db: Session = Depends(get_db)
 ):
     """
-    Tworzy nową transakcję finansową dla zalogowanego użytkownika.
+    Creates a new financial transaction for the logged-in user.
     """
     new_transaction = Transaction(
         **transaction_data.model_dump(),
@@ -38,7 +38,7 @@ async def get_transactions(
     db: Session = Depends(get_db)
 ):
     """
-    Pobiera listę wszystkich transakcji finansowych zalogowanego użytkownika.
+    Retrieves a list of all financial transactions for the logged-in user.
     """
     transactions = db.query(Transaction).filter(
         Transaction.user_id == current_user.id
@@ -51,48 +51,52 @@ async def get_transactions(
 async def upload_receipt(
     file: Annotated[UploadFile, File()], 
     db: Annotated[Session, Depends(get_db)],
-    # current_user: Annotated[User, Depends(get_current_user)] # Załóżmy, że używasz uwierzytelnienia
+    current_user: Annotated[User, Depends(get_current_user)]
 ):
-    # 1. Wyślij plik do pracownika OCR
     ocr_result = await parse_receipt_via_ocr_worker(file)
 
-    # 2. Parsowanie i zapis nagłówka (Receipt)
+    parsed_data = ocr_result.get('parsed_data', {})
+    receipt_data = parsed_data.get("receipt_data", {})
+    items_data = parsed_data.get("items", [])
+
     try:
         receipt_data = ocr_result.get("receipt_data", {})
         items_data = ocr_result.get("items", [])
         
-        # Utwórz nowy obiekt Receipt
         new_receipt = Receipt(
-            # user_id=current_user.id, # Powiąż z zalogowanym użytkownikiem
-            user_id=1, # Na potrzeby testów, zakładając, że user_id=1 istnieje
-            store_name=receipt_data.get("store", "Nieznany Sklep"),
+            user_id=current_user.id,
+            store_name=receipt_data.get("store", "Unknown Store"),
             total_amount=receipt_data.get("total", 0.0),
-            # Załóżmy, że data jest zwracana w formacie YYYY-MM-DD
-            receipt_date=datetime.strptime(receipt_data.get("date", "2024-01-01"), "%Y-%m-%d"), 
+            receipt_date=datetime.strptime(parsed_data.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d").date(),
         )
         
         db.add(new_receipt)
-        db.flush() # Wymuś zapis, aby otrzymać new_receipt.id
-        
-        # 3. Parsowanie i zapis pozycji (ReceiptItem)
+        db.flush() 
         for item in items_data:
+            try:
+                total_price_float = float(item.get("total_price", 0.0))
+                price_float = float(item.get("unit_price", total_price_float))
+            except (ValueError, TypeError):
+                total_price_float = 0.0
+                price_float = 0.0
+                
             new_item = ReceiptItem(
                 receipt_id=new_receipt.id,
                 name=item.get("name"),
-                quantity=item.get("qty", 1.0),
-                price=item.get("unit_price", item.get("total_price")), # Zapisz cenę jednostkową
-                total_price=item.get("total_price"),
+                quantity=item.get("quantity", 1.0),
+                price=price_float, 
+                total_price=total_price_float,
             )
             db.add(new_item)
             
         db.commit()
         db.refresh(new_receipt)
         
-        return {"message": "Paragon sparsowany i zapisany pomyślnie!", "receipt_id": new_receipt.id}
+        return {"message": "Receipt parsed and saved successfully!", "receipt_id": new_receipt.id}
         
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail=f"Błąd podczas zapisu danych z paragonu: {e}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error saving data: {e}"
         )

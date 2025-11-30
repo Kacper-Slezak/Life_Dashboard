@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('registered') === 'true') {
         Swal.fire({
-            title: 'Rejestracja zakończona pomyślnie!',
-            text: 'Możesz teraz zalogować się na swoje konto.',
+            title: 'Registration successful!',
+            text: 'You can now log in to your account.',
             icon: 'success',
             confirmButtonColor: '#10B981'
         });
@@ -27,14 +27,14 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Wystąpił błąd podczas logowania');
+        if (!response.ok) throw new Error(data.detail || 'An error occurred during login');
 
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
         Swal.fire({
-            title: 'Logowanie udane!',
-            text: 'Przekierowujemy do panelu...',
+            title: 'Login successful!',
+            text: 'Redirecting to dashboard...',
             icon: 'success',
             timer: 1500,
             showConfirmButton: false
@@ -53,14 +53,14 @@ document.getElementById('googleAuthBtn').addEventListener('click', async functio
 
         const response = await fetch('/api-connections/google-fit/auth', {
             headers: {
-                'Authorization': `Bearer ${token}`  // Dodaj nagłówek z tokenem
+                'Authorization': `Bearer ${token}`  // Add token header
             }
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.detail || 'Błąd inicjalizacji');
+            throw new Error(data.detail || 'Initialization error');
         }
 
         if (data.auth_url) {
@@ -69,7 +69,7 @@ document.getElementById('googleAuthBtn').addEventListener('click', async functio
         }
     } catch (error) {
         Swal.fire({
-            title: 'Błąd autoryzacji Google',
+            title: 'Google authorization error',
             text: error.message,
             icon: 'error',
             confirmButtonColor: '#EF4444'

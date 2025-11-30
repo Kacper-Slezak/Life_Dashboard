@@ -8,15 +8,15 @@ document.getElementById('password').addEventListener('input', function(e) {
 
     if (strength < 33) {
         strengthBar.className = 'h-full bg-red-500 transition-all duration-300';
-        passwordHint.textContent = 'Hasło jest zbyt słabe';
+            passwordHint.textContent = 'Password is too weak';
         passwordHint.className = 'mt-1 text-xs text-red-500';
     } else if (strength < 66) {
         strengthBar.className = 'h-full bg-yellow-500 transition-all duration-300';
-        passwordHint.textContent = 'Hasło jest średnie';
+        passwordHint.textContent = 'Password strength is medium';
         passwordHint.className = 'mt-1 text-xs text-yellow-600';
     } else {
         strengthBar.className = 'h-full bg-green-500 transition-all duration-300';
-        passwordHint.textContent = 'Hasło jest silne';
+        passwordHint.textContent = 'Password is strong';
         passwordHint.className = 'mt-1 text-xs text-green-600';
     }
 });
@@ -42,27 +42,27 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     const errorMessage = document.getElementById('errorMessage');
 
     if (password !== confirmPassword) {
-        errorMessage.textContent = 'Hasła nie są zgodne';
+        errorMessage.textContent = 'Passwords do not match';
         errorMessage.classList.remove('hidden');
         return;
     }
 
     if (password.length < 8) {
-        errorMessage.textContent = 'Hasło musi mieć minimum 8 znaków';
+        errorMessage.textContent = 'Password must be at least 8 characters';
         errorMessage.classList.remove('hidden');
         return;
     }
 
     if (!document.getElementById('terms').checked) {
-        errorMessage.textContent = 'Musisz zaakceptować regulamin i politykę prywatności';
+        errorMessage.textContent = 'You must accept the terms and privacy policy';
         errorMessage.classList.remove('hidden');
         return;
     }
 
     try {
         Swal.fire({
-            title: 'Przetwarzanie...',
-            text: 'Trwa tworzenie konta',
+            title: 'Processing...',
+            text: 'Creating account',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
@@ -74,7 +74,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Wystąpił błąd podczas rejestracji');
+        if (!response.ok) throw new Error(data.detail || 'An error occurred during registration');
 
         window.location.href = '/login?registered=true';
     } catch (error) {

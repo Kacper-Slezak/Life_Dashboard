@@ -2,18 +2,18 @@
 
 from decimal import Decimal, ROUND_HALF_UP
 from app import db
-from app.models import Product, ShoppingList, Settlement, User  # Upewnij się, że User i Friend są zaimportowane
+from app.models import Product, ShoppingList, Settlement, User  # Ensure User and Friend are imported
 
 
 def check_and_update_list_settlement_status(shopping_list_id):
     """
-    Sprawdza, czy wszystkie rozliczenia dla danej listy zakupów zostały uregulowane.
-    Jeśli tak, ustawia is_fully_settled na True dla ShoppingList.
+    Check whether all settlements for a given shopping list are settled.
+    If so, set `is_fully_settled` to True for the ShoppingList.
     """
     shopping_list = ShoppingList.query.get(shopping_list_id)
     if not shopping_list:
         print(
-            f"DEBUG: _check_and_update_list_settlement_status: Błąd: Lista zakupów o ID {shopping_list_id} nie istnieje.")
+            f"DEBUG: _check_and_update_list_settlement_status: Error: Shopping list with ID {shopping_list_id} does not exist.")
         return
 
     all_list_settlements = Settlement.query.filter_by(shopping_list_id=shopping_list_id).all()
@@ -22,31 +22,31 @@ def check_and_update_list_settlement_status(shopping_list_id):
     if all_settled and not shopping_list.is_fully_settled:
         shopping_list.is_fully_settled = True
         print(
-            f"DEBUG: _check_and_update_list_settlement_status: Lista '{shopping_list.name}' (ID: {shopping_list_id}) została w pełni rozliczona.")
+            f"DEBUG: _check_and_update_list_settlement_status: List '{shopping_list.name}' (ID: {shopping_list_id}) has been fully settled.")
     elif not all_settled and shopping_list.is_fully_settled:
         shopping_list.is_fully_settled = False
         print(
-            f"DEBUG: _check_and_update_list_settlement_status: Lista '{shopping_list.name}' (ID: {shopping_list_id}) NIE jest w pełni rozliczona. Zmieniono status.")
+            f"DEBUG: _check_and_update_list_settlement_status: List '{shopping_list.name}' (ID: {shopping_list_id}) is NOT fully settled. Status changed.")
 
     db.session.commit()
-    print(f"DEBUG: _check_and_update_list_settlement_status: Zmiany statusu listy {shopping_list_id} zatwierdzone.")
+    print(f"DEBUG: _check_and_update_list_settlement_status: Committed status changes for list {shopping_list_id}.")
 
 
 def calculate_settlements(shopping_list_id):
     """
-    Oblicza i zapisuje rozliczenia dla danej listy zakupów, minimalizując liczbę transakcji.
-    Rozliczenia mogą odbywać się między Użytkownikami a Znajomymi.
+    Calculate and persist settlements for a given shopping list, minimizing the
+    number of transactions. Settlements can be between Users and Friends.
     """
     shopping_list = ShoppingList.query.get(shopping_list_id)
     if not shopping_list:
-        print(f"DEBUG: calculate_settlements: ERROR: Lista zakupów o ID {shopping_list_id} nie została znaleziona.")
+        print(f"DEBUG: calculate_settlements: ERROR: Shopping list with ID {shopping_list_id} not found.")
         return []
 
     products = Product.query.filter_by(shopping_list_id=shopping_list_id).all()
-    print(f"DEBUG: calculate_settlements: Produkty dla listy {shopping_list_id}: {[p.name for p in products]}")
+    print(f"DEBUG: calculate_settlements: Products for list {shopping_list_id}: {[p.name for p in products]}")
 
     participants = shopping_list.participants.all()
-    print(f"DEBUG: calculate_settlements: Uczestnicy listy {shopping_list_id}: {[p.username for p in participants]}")
+    print(f"DEBUG: calculate_settlements: Participants for list {shopping_list_id}: {[p.username for p in participants]}")
 
     all_entities = set()
     for participant in participants:
@@ -58,27 +58,27 @@ def calculate_settlements(shopping_list_id):
         for friend in product.assigned_friends_for_product:
             all_entities.add(('friend', friend.id))
 
-    print(f"DEBUG: calculate_settlements: Wszystkie zaangażowane podmioty: {all_entities}")
+    print(f"DEBUG: calculate_settlements: All involved entities: {all_entities}")
 
     if not products or not all_entities:
         print(
-            f"DEBUG: calculate_settlements: Brak produktów lub podmiotów do rozliczeń dla listy {shopping_list_id}. Brak rozliczeń do wygenerowania.")
+            f"DEBUG: calculate_settlements: No products or entities to settle for list {shopping_list_id}. No settlements generated.")
         shopping_list.is_fully_settled = True
         db.session.commit()
         return []
 
     balances = {entity: Decimal('0.00') for entity in all_entities}
-    print(f"DEBUG: calculate_settlements: Salda początkowe: {balances}")
+    print(f"DEBUG: calculate_settlements: Initial balances: {balances}")
 
-    # Sumujemy wpłaty (kto ile zapłacił za produkty)
+    # Sum payments (who paid for each product)
     for product in products:
         if product.paid_by:
             balances[('user', product.paid_by)] += product.price
             print(
-                f"DEBUG: calculate_settlements: Użytkownik {User.query.get(product.paid_by).username if User.query.get(product.paid_by) else product.paid_by} zapłacił {product.price} za {product.name}. Nowe saldo: {balances[('user', product.paid_by)]}")
-    print(f"DEBUG: calculate_settlements: Salda po sumowaniu wpłat: {balances}")
+                f"DEBUG: calculate_settlements: User {User.query.get(product.paid_by).username if User.query.get(product.paid_by) else product.paid_by} paid {product.price} for {product.name}. New balance: {balances[('user', product.paid_by)]}")
+    print(f"DEBUG: calculate_settlements: Balances after summing payments: {balances}")
 
-    # Rozliczamy koszty produktów
+    # Settle product costs
     for product in products:
         item_price = product.price
         assigned_friends = product.assigned_friends_for_product
@@ -89,28 +89,28 @@ def calculate_settlements(shopping_list_id):
                 if ('friend', friend.id) in balances:
                     balances[('friend', friend.id)] -= share_per_friend
                     print(
-                        f"DEBUG: calculate_settlements: Znajomy {friend.name} przypisany do {product.name}. Saldo: {balances[('friend', friend.id)]}")
+                        f"DEBUG: calculate_settlements: Friend {friend.name} assigned to {product.name}. Balance: {balances[('friend', friend.id)]}")
                 else:
                     print(
-                        f"DEBUG: calculate_settlements: WARNING: Znajomy {friend.name} (ID {friend.id}) nie jest w balansie. Błąd logiki.")
+                        f"DEBUG: calculate_settlements: WARNING: Friend {friend.name} (ID {friend.id}) not present in balances. Logic error.")
         else:
             if product.paid_by:
                 if ('user', product.paid_by) in balances:
                     balances[('user', product.paid_by)] -= item_price
                     print(
-                        f"DEBUG: calculate_settlements: Użytkownik {User.query.get(product.paid_by).username if User.query.get(product.paid_by) else product.paid_by} ponosi koszt {item_price} za {product.name}. Saldo: {balances[('user', product.paid_by)]}")
+                        f"DEBUG: calculate_settlements: User {User.query.get(product.paid_by).username if User.query.get(product.paid_by) else product.paid_by} bears cost {item_price} for {product.name}. Balance: {balances[('user', product.paid_by)]}")
                 else:
                     print(
-                        f"DEBUG: calculate_settlements: WARNING: Produkt {product.name} (ID {product.id}) nie jest przypisany i został zapłacony przez użytkownika {product.paid_by}, który nie jest w balansie. Koszt nie zostanie rozliczony.")
+                        f"DEBUG: calculate_settlements: WARNING: Product {product.name} (ID {product.id}) is unassigned and was paid by user {product.paid_by}, who is not in balances. Cost will not be settled.")
             else:
                 print(
-                    f"DEBUG: calculate_settlements: WARNING: Produkt {product.name} (ID {product.id}) nie jest przypisany i nie ma przypisanego płacącego. Koszt nie zostanie rozliczony.")
+                    f"DEBUG: calculate_settlements: WARNING: Product {product.name} (ID {product.id}) is unassigned and has no payer. Cost will not be settled.")
 
-    print(f"DEBUG: calculate_settlements: Salda po rozliczeniu kosztów: {balances}")
+    print(f"DEBUG: calculate_settlements: Balances after settling costs: {balances}")
 
     balances = {entity: balance.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 for entity, balance in balances.items() if balance != Decimal('0.00')}
-    print(f"DEBUG: calculate_settlements: Salda po zaokrągleniu i odfiltrowaniu zerowych: {balances}")
+    print(f"DEBUG: calculate_settlements: Balances after rounding and filtering zeros: {balances}")
 
     debtors = {entity: abs(balance) for entity, balance in balances.items() if balance < 0}
     creditors = {entity: balance for entity, balance in balances.items() if balance > 0}
@@ -120,8 +120,8 @@ def calculate_settlements(shopping_list_id):
     creditors_list = sorted([{'entity': entity, 'amount': amount} for entity, amount in creditors.items()],
                             key=lambda x: x['amount'], reverse=True)
 
-    print(f"DEBUG: calculate_settlements: Lista dłużników: {debtors_list}")
-    print(f"DEBUG: calculate_settlements: Lista wierzycieli: {creditors_list}")
+    print(f"DEBUG: calculate_settlements: Debtors list: {debtors_list}")
+    print(f"DEBUG: calculate_settlements: Creditors list: {creditors_list}")
 
     generated_settlements = []
 
@@ -150,7 +150,7 @@ def calculate_settlements(shopping_list_id):
         generated_settlements.append(new_settlement)
         db.session.add(new_settlement)
 
-        print(f"DEBUG: calculate_settlements: Dodano rozliczenie: {new_settlement}")
+        print(f"DEBUG: calculate_settlements: Added settlement: {new_settlement}")
 
         debtor_item['amount'] -= amount_to_settle
         creditor_item['amount'] -= amount_to_settle
@@ -163,10 +163,10 @@ def calculate_settlements(shopping_list_id):
     try:
         db.session.commit()
         print(
-            f"DEBUG: calculate_settlements: Wygenerowano {len(generated_settlements)} rozliczeń dla listy {shopping_list_id}.")
+            f"DEBUG: calculate_settlements: Generated {len(generated_settlements)} settlements for list {shopping_list_id}.")
         check_and_update_list_settlement_status(shopping_list_id)
         return generated_settlements
     except Exception as e:
         db.session.rollback()
-        print(f"DEBUG: calculate_settlements: Błąd podczas zapisu rozliczeń dla listy {shopping_list_id}: {e}")
+        print(f"DEBUG: calculate_settlements: Error while saving settlements for list {shopping_list_id}: {e}")
         return []

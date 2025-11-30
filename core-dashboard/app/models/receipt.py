@@ -10,7 +10,7 @@ class Receipt(Base):
     __tablename__ = "receipts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
     
     store_name: Mapped[str | None] = mapped_column(String(100), index=True)
     receipt_date: Mapped[DateTime | None] = mapped_column(DateTime)

@@ -19,7 +19,7 @@ async def create_transaction(
     db: Session = Depends(get_db)
 ):
     """
-    Tworzy nową transakcję finansową dla zalogowanego użytkownika.
+    Create a new financial transaction for the authenticated user.
     """
     new_transaction = Transaction(
         **transaction_data.model_dump(),
@@ -37,7 +37,7 @@ async def get_transactions(
     db: Session = Depends(get_db)
 ):
     """
-    Pobiera listę wszystkich transakcji finansowych zalogowanego użytkownika.
+    Retrieve the list of all financial transactions for the authenticated user.
     """
     transactions = db.query(Transaction).filter(
         Transaction.user_id == current_user.id

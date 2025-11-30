@@ -16,15 +16,15 @@ COPY --from=builder /usr/src/app/wheels /wheels
 
 COPY . .
 
-# SRE: Instaluj tylko bibliotekę wykonawczą, nie deweloperską
-# SRE: Usuń cache apt po instalacji
+# SRE: Install only runtime libraries, not development packages
+# SRE: Remove apt cache after installation
 RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && \
     pip install --no-cache-dir --find-links=/wheels -r requirements.txt && \
     rm -rf /var/lib/apt/lists/*
 
-# SRE: Uruchom jako użytkownik non-root dla bezpieczeństwa
+# SRE: Run as a non-root user for improved security
 RUN useradd -m -u 1001 appuser
 USER appuser
 
-# SRE: Poprawiona ścieżka CMD (main.py jest w /app, nie /app/app)
+# SRE: Fixed CMD path (main.py is in /app, not /app/app)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

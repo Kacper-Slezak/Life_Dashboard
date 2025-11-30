@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from datetime import datetime, timedelta
 from app.services.health import GoogleFitServices
 from app.services.auth import get_current_user
-from app.models.user import User # <-- Ważny import
+from app.models.user import User # <-- Important import
 
 router = APIRouter()
 
@@ -22,5 +22,5 @@ async def get_dashboard_data(
     except HTTPException as e: # Najpierw łap HTTPException
         raise e
     except Exception as e:
-        print(f"Nieoczekiwany błąd w /api/health/dashboard: {e}") # Logowanie błędu
-        raise HTTPException(status_code=500, detail="Wystąpił wewnętrzny błąd serwera podczas pobierania danych.")
+        print(f"Unexpected error in /api/health/dashboard: {e}") # Log error
+        raise HTTPException(status_code=500, detail="An internal server error occurred while fetching data.")

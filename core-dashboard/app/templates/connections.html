@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Połączenia API</title>
+    <title>API Connections</title>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Zarządzaj połączeniami API</h1>
+        <h1>Manage API Connections</h1>
 
-        <!-- Sekcja Google Fit -->
+        <!-- Google Fit section -->
         <div class="connection-card">
             <h2>Google Fit</h2>
             <button onclick="initGoogleFitAuth()" id="google-fit-btn">
-                Autoryzuj z Google Fit
+                Authorize with Google Fit
             </button>
             <div id="status-message"></div>
         </div>
 
         <!-- Button to go back to dashboard -->
         <div class="navigation">
-            <a href="/dashboard" class="button">Powrót do panelu</a>
+            <a href="/dashboard" class="button">Back to dashboard</a>
         </div>
     </div>
 
@@ -35,7 +35,7 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Błąd serwera');
+                    throw new Error(errorData.detail || 'Server error');
                 }
 
                 const data = await response.json();
@@ -43,7 +43,7 @@
                 window.location.href = data.auth_url;
 
             } catch (error) {
-                showError(`Błąd: ${error.message}`);
+                showError(`Error: ${error.message}`);
             }
         }
 
@@ -51,7 +51,7 @@
             try {
                 const token = localStorage.getItem('access_token');
                 if (!token) {
-                    showError('Nie jesteś zalogowany. Przekierowanie do strony logowania...');
+                    showError('You are not logged in. Redirecting to login...');
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 2000);
@@ -66,31 +66,31 @@
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        showError('Sesja wygasła. Przekierowanie do strony logowania...');
+                        showError('Session expired. Redirecting to login...');
                         setTimeout(() => {
                             window.location.href = '/login';
                         }, 2000);
                         return;
                     }
-                    throw new Error('Błąd ładowania danych');
+                    throw new Error('Error loading data');
                 }
 
                 const connections = await response.json();
                 const btn = document.getElementById('google-fit-btn');
 
-                // Sprawdź, czy istnieje połączenie Google Fit
+                // Check whether a Google Fit connection exists
                 const googleFitConn = connections.find(conn => conn.provider === 'google_fit');
 
                 if (googleFitConn) {
                     btn.innerHTML = googleFitConn.is_active
-                        ? 'Połączono z Google Fit <span class="status-dot active"></span>'
-                        : 'Autoryzuj z Google Fit <span class="status-dot inactive"></span>';
+                        ? 'Connected to Google Fit <span class="status-dot active"></span>'
+                        : 'Authorize with Google Fit <span class="status-dot inactive"></span>';
                 } else {
-                    btn.innerHTML = 'Autoryzuj z Google Fit';
+                    btn.innerHTML = 'Authorize with Google Fit';
                 }
 
             } catch (error) {
-                showError('Nie udało się załadować połączeń: ' + error.message);
+                showError('Failed to load connections: ' + error.message);
             }
         }
 
@@ -106,22 +106,22 @@
             setTimeout(() => statusDiv.innerHTML = '', 5000);
         }
 
-        // Sprawdź, czy użytkownik wrócił z procesu autoryzacji
+        // Check if the user returned from the authorization process
         function checkAuthCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const authSuccess = urlParams.get('auth_success');
 
             if (authSuccess === 'true') {
-                showSuccess('Połączenie z Google Fit zostało ustanowione pomyślnie!');
-                // Usuń parametry z URL
+                showSuccess('Connection to Google Fit established successfully!');
+                // Remove parameters from URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else if (authSuccess === 'false') {
-                showError('Nie udało się połączyć z Google Fit. Spróbuj ponownie.');
+                showError('Failed to connect to Google Fit. Please try again.');
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
 
-        // Inicjalizacja po załadowaniu strony
+        // Initialize after page load
         window.addEventListener('load', () => {
             loadConnections();
             checkAuthCallback();

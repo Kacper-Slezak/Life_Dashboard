@@ -21,7 +21,7 @@ dotenv.load_dotenv()
 
 
 
-# Router dla połączeń API
+# Router for API connections
 router = APIRouter(
     prefix="/api-connections",
     tags=["API Connections"],
@@ -34,7 +34,7 @@ async def get_user_api_connections(
         db: Session = Depends(get_db)
 ):
     """
-    Pobiera listę wszystkich połączeń API dla zalogowanego użytkownika.
+    Return a list of all API connections for the authenticated user.
     """
     connections = db.query(ApiConnection).filter(
         ApiConnection.user_id == current_user.id
@@ -50,7 +50,7 @@ async def create_api_connection(
         db: Session = Depends(get_db)
 ):
     """
-    Tworzy nowe połączenie API dla zalogowanego użytkownika.
+    Create or update an API connection for the authenticated user.
     """
     # Sprawdzenie, czy połączenie z tym dostawcą już istnieje
     existing_connection = db.query(ApiConnection).filter(
@@ -101,7 +101,7 @@ async def delete_api_connection(
     if not connection:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Połączenie API nie zostało znalezione"
+            detail="API connection not found"
         )
 
     db.delete(connection)
@@ -117,10 +117,10 @@ async def initialize_google_fit_auth(
         db: Session = Depends(get_db)
 ):
     """
-    Inicjalizuje proces autoryzacji z Google Fit.
+    Initialize Google Fit authorization.
 
-    Generuje URL, na który użytkownik musi przejść, aby zalogować się do Google
-    i udzielić zgody na dostęp do danych z Google Fit.
+    Generates the URL the user must visit to sign in with Google and grant
+    access to Google Fit data.
     """
     # Generowanie stanu dla zabezpieczenia CSRF
     state = secrets.token_urlsafe(16)
@@ -168,22 +168,22 @@ async def initialize_google_fit_auth(
     if not client_id:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Brak konfiguracji GOOGLE_CLIENT_ID. Skontaktuj się z administratorem."
+            detail="GOOGLE_CLIENT_ID not configured. Contact the administrator."
         )
 
     # URL autoryzacji Google
     ...
     auth_url = f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={'%20'.join(scopes)}&state={state}&access_type=offline&prompt=consent"
 
-    # DODAJ TEN PRINT
-    print(f"DEBUG: URL Autoryzacji: {auth_url}")
+    # Debug prints
+    print(f"DEBUG: Authorization URL: {auth_url}")
     print(f"DEBUG: Redirect URI (Init): {redirect_uri}")
     
 
     return {
         "auth_url": auth_url,
         "state": state,
-        "message": "Przejdź na podany URL, aby zalogować się do Google Fit"
+        "message": "Open the provided URL to sign in to Google Fit"
     }
 
 
@@ -194,9 +194,9 @@ async def google_fit_callback(
         db: Session = Depends(get_db)
 ):
     """
-    Obsługuje callback od Google po autoryzacji.
+    Handle Google callback after authorization.
 
-    Wymienia kod autoryzacyjny na tokeny dostępu i odświeżania.
+    Exchanges the authorization code for access and refresh tokens.
     """
     # Znajdź połączenie z tym stanem dla weryfikacji CSRF
     connection = db.query(ApiConnection).filter(
@@ -221,10 +221,10 @@ async def google_fit_callback(
     base_url = os.getenv('APP_BASE_URL', 'http://localhost:8080')
     redirect_uri = f"{base_url}/api/api-connections/google-fit/callback"
 
-    # DODAJ TEN PRINT
+    # Debug prints
     print(f"DEBUG: Redirect URI (Callback): {redirect_uri}")
-    print(f"DEBUG: Otrzymany 'code': {code}")
-    print(f"DEBUG: Otrzymany 'state': {state}")
+    print(f"DEBUG: Received 'code': {code}")
+    print(f"DEBUG: Received 'state': {state}")
     # Parametry żądania wymiany kodu na tokeny
     token_params = {
         "code": code,
@@ -235,9 +235,9 @@ async def google_fit_callback(
     }
 
     try:
-        # Wykonanie żądania HTTP do Google API
+        # Execute HTTP request to Google API
         response = requests.post(token_url, data=token_params)
-        response.raise_for_status()  # Sprawdzenie czy nie ma błędu HTTP
+        response.raise_for_status()
 
         token_data = response.json()
 

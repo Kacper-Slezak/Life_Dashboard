@@ -17,14 +17,14 @@ ALGORITHM = settings.ALGORITHM
 dotenv.load_dotenv()
 
 
-# Konwersja na int z wartością domyślną w przypadku błędu
+# Convert to int with a default value on error
 try:
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '30'))
 except ValueError:
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")  # Poprawiona ścieżka
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")  # Fixed path
 
 
 def verify_password(plain_password, hashed_password):
@@ -37,7 +37,7 @@ def get_password_hash(password):
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    # Poprawne ustawienie czasu wygaśnięcia
+    # Properly set the expiration time
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -47,7 +47,7 @@ def create_access_token(data: dict):
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Nie można zweryfikować poświadczeń",
+        detail="Could not verify credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -58,16 +58,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
 
-    # Użyj metody first() zamiast bezpośredniego filtrowania
+    # Use the `first()` method instead of filtering directly
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
 
-    # Sprawdź, czy konto jest aktywne
+    # Check if the account is active
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Konto użytkownika jest nieaktywne",
+            detail="User account is inactive",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

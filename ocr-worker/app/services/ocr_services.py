@@ -9,33 +9,33 @@ import json
 from decimal import Decimal, InvalidOperation # Dodano InvalidOperation
 
 
-def set_tesseact_path():
+def set_tesseract_path():
     tesseract_path = app.config.get('TESSERACT_PATH')
-    print(f"DEBUG: TESSERACT_PATH z config.py: '{tesseract_path}'")
+    print(f"DEBUG: TESSERACT_PATH from config.py: '{tesseract_path}'")
     if tesseract_path and os.path.exists(tesseract_path):
         pytesseract.pytesseract.tesseract_cmd = tesseract_path
-        print(f"DEBUG: Ustawiono pytesseract.pytesseract.tesseract_cmd na: '{tesseract_path}'")
+        print(f"DEBUG: Set pytesseract.pytesseract.tesseract_cmd to: '{tesseract_path}'")
     else:
         print(f'WARNING: No tesseract path found at {tesseract_path}. Configure .env variables first.')
-        print(f"DEBUG: Czy ścieżka istnieje według os.path.exists? {os.path.exists(tesseract_path)}")
-        print(f"DEBUG: Typ tesseract_path: {type(tesseract_path)}")
+        print(f"DEBUG: Does path exist according to os.path.exists? {os.path.exists(tesseract_path)}")
+        print(f"DEBUG: Type of tesseract_path: {type(tesseract_path)}")
 
 
 def preprocess_image(image_path):
     """
-    Funkcja preprocessingu.
-    Skupia się na kluczowych krokach: konwersji do skali szarości,
-    binaryzacji i zapewnieniu właściwego formatu (czarny tekst na białym tle).
+    Image preprocessing function.
+    Focuses on key steps: grayscale conversion,
+    binarization and ensuring correct format (black text on white background).
     """
     try:
         image = cv2.imread(image_path)
         if image is None:
-            raise FileNotFoundError(f"Nie można załadować obrazu: {image_path}")
+            raise FileNotFoundError(f"Could not load image: {image_path}")
 
-        # Krok 1: Konwersja do skali szarości
+        # Step 1: Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Automatyczna korekcja orientacji za pomocą Tesseract OSD
+        # Automatic orientation correction using Tesseract OSD
         try:
             osd_data = pytesseract.image_to_osd(gray)
             rotation_angle = 0
@@ -52,11 +52,11 @@ def preprocess_image(image_path):
                 gray = cv2.warpAffine(gray, rotation_matrix, (w, h),
                                       flags=cv2.INTER_CUBIC,
                                       borderMode=cv2.BORDER_REPLICATE)
-                print(f"DEBUG: Skorygowano orientację obrazu o {rotation_angle} stopni.")
+                print(f"DEBUG: Corrected image orientation by {rotation_angle} degrees.")
         except Exception as e:
-            print(f"DEBUG: Tesseract OSD nie zadziałał, kontynuuję bez korekcji orientacji: {e}")
+            print(f"DEBUG: Tesseract OSD did not work, continuing without orientation correction: {e}")
 
-        # Krok 3: Korekcja przekrzywienia (Deskewing)
+        # Step 3: Deskewing (skew correction)
         try:
             coords = np.column_stack(np.where(gray > 0))
             angle = cv2.minAreaRect(coords)[-1]
@@ -70,27 +70,27 @@ def preprocess_image(image_path):
                 center = (w // 2, h // 2)
                 m = cv2.getRotationMatrix2D(center, angle, 1.0)
                 gray = cv2.warpAffine(gray, m, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-                print(f"DEBUG: Skorygowano przekrzywienie obrazu o {angle:.2f} stopni.")
+                print(f"DEBUG: Corrected image skew by {angle:.2f} degrees.")
         except Exception as e:
-            print(f"WARNING: Nie udało się skorygować przekrzywienia: {e}")
+            print(f"WARNING: Could not correct skew: {e}")
 
-        # Krok 4: Binaryzacja z metodą Otsu
+        # Step 4: Binarization using Otsu's method
         thresh_value, thresh_image = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        print(f"DEBUG: Użyto progu Otsu o wartości: {thresh_value}")
+        print(f"DEBUG: Used Otsu threshold value: {thresh_value}")
 
-        # Krok 5: Zapewnienie, że tekst jest czarny na białym tle
+        # Step 5: Ensure text is black on white background
         if np.mean(thresh_image) < 128:
-            print("DEBUG: Wykryto biały tekst na czarnym tle. Inwertuję obraz.")
+            print("DEBUG: Detected white text on black background. Inverting image.")
             thresh_image = cv2.bitwise_not(thresh_image)
 
         debug_path = os.path.join(os.path.dirname(image_path), f"debug_preprocessed_{os.path.basename(image_path)}")
         cv2.imwrite(debug_path, thresh_image)
-        print(f"DEBUG: Zapisano obraz po preprocessingu do: {debug_path}")
+        print(f"DEBUG: Saved preprocessed image to: {debug_path}")
 
         return Image.fromarray(thresh_image)
 
     except Exception as e:
-        print(f"FATAL: Krytyczny błąd podczas przetwarzania obrazu '{image_path}': {e}")
+        print(f"FATAL: Critical error while processing image '{image_path}': {e}")
         return None
 
 
@@ -98,7 +98,7 @@ def run_ocr(image_path):
     """
     Enhanced OCR with multiple configuration attempts.
     """
-    set_tesseact_path()
+    set_tesseract_path()
 
     original_tmpdir = os.environ.get('TMPDIR')
     original_temp = os.environ.get('TEMP')
@@ -166,8 +166,8 @@ def run_ocr(image_path):
 
 def parse_ocr(raw_text):
     """
-    Parsuje surowy tekst z OCR, aby wyodrębnić nazwy produktów i ceny.
-    Zwraca słownik z kluczem "items", gdzie "total_price" jest stringiem.
+    Parse raw OCR text to extract product names and prices.
+    Returns a dict with key "items" where "total_price" is a string.
     """
     parsed_data = {
         "items": [],
@@ -377,15 +377,15 @@ def parse_ocr(raw_text):
         if name and total_price:
             item = {
                 "name": clean_name(name),
-                "total_price": str(Decimal(total_price)) # Upewnij się, że jest to string
+                "total_price": str(Decimal(total_price)) # Ensure this is a string
             }
 
             if quantity is not None:
                 item["quantity"] = quantity
             if unit_price is not None:
-                item["unit_price"] = str(Decimal(unit_price)) # Upewnij się, że jest to string
+                item["unit_price"] = str(Decimal(unit_price)) # Ensure this is a string
 
-            # Rabat – jak wcześniej
+            # Discount — as before
             if i + 2 < len(lines):
                 next_line = lines[i + 1].strip()
                 potential_price_line = lines[i + 2].strip()
@@ -412,9 +412,9 @@ def parse_ocr(raw_text):
                             original_decimal = Decimal(item["total_price"])
 
                             if abs((original_decimal - discount_decimal) - final_decimal) < Decimal('0.05'):
-                                item["discount_amount"] = str(discount_decimal) # Upewnij się, że jest to string
+                                item["discount_amount"] = str(discount_decimal) # Ensure this is a string
                                 item["original_price"] = item["total_price"]
-                                item["total_price"] = str(final_decimal) # Upewnij się, że jest to string
+                                item["total_price"] = str(final_decimal) # Ensure this is a string
                                 i += 2
                                 items.append(item)
                                 i += 1
@@ -432,13 +432,13 @@ def parse_ocr(raw_text):
     return parsed_data
 
 
-def process_receipt_image(receipe_id, image_path):
+def process_receipt_image(receipt_id, image_path):
     from app import db
     from app.models import Receipt
 
-    receipt = Receipt.query.get(receipe_id)
+    receipt = Receipt.query.get(receipt_id)
     if receipt is None:
-        print(f"ERROR: Receipt {receipe_id} not found.")
+        print(f"ERROR: Receipt {receipt_id} not found.")
         return
     try:
         receipt.status = 'Processing'
@@ -455,12 +455,12 @@ def process_receipt_image(receipe_id, image_path):
             receipt.set_processed_data(parsed_data)
             receipt.status = 'Processed'
         db.session.commit()
-        print(f"Processed receipt {receipe_id}. Status: {receipt.status}")
+        print(f"Processed receipt {receipt_id}. Status: {receipt.status}")
 
     except Exception as e:
         db.session.rollback()
         receipt.status = 'ERROR'
         receipt.processed_data = json.dumps({"error": str(e)})
         db.session.commit()
-        print(f"An unexpected error occurred while processing receipt {receipe_id}: {e}")
+        print(f"An unexpected error occurred while processing receipt {receipt_id}: {e}")
 
