@@ -1,4 +1,4 @@
-            from typing import Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
@@ -119,13 +119,13 @@ async def update_user_profile(
     """
     Update the currently authenticated user's profile.
     """
-    # Aktualizacja danych użytkownika
+    # Update user data
     for key, value in user_data.items():
         if key == "password":
-            # Jeśli zmiana hasła, należy je zahaszować
+            # If password change, hash it
             setattr(current_user, "hashed_password", get_password_hash(value))
         elif key != "hashed_password" and hasattr(current_user, key):
-            # Aktualizacja innych pól (z wyjątkiem bezpośredniego ustawiania hasza hasła)
+            # Update other fields (except direct password hash setting)
             setattr(current_user, key, value)
 
     db.commit()

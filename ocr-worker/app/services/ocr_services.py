@@ -6,7 +6,7 @@ import os
 import re
 from flask import current_app as app
 import json
-from decimal import Decimal, InvalidOperation # Dodano InvalidOperation
+from decimal import Decimal, InvalidOperation # Added InvalidOperation
 
 
 def set_tesseract_path():
@@ -222,7 +222,7 @@ def parse_ocr(raw_text):
             p = normalize_price(m.group(1))
             try:
                 return str(Decimal(p))
-            except InvalidOperation: # Użyj InvalidOperation
+            except InvalidOperation: # Use InvalidOperation
                 pass
         return None
 

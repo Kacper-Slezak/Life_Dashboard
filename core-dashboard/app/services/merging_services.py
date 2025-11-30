@@ -1,5 +1,5 @@
 import re
-from decimal import Decimal, InvalidOperation  # Dodano InvalidOperation
+from decimal import Decimal, InvalidOperation  # Added InvalidOperation
 
 
 def normalize_text(text):

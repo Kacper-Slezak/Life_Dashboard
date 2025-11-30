@@ -19,13 +19,13 @@ class Transaction(Base):
     user = relationship("User", back_populates="transactions")
 
 
-# Schemat Pydantic do walidacji danych wejściowych
+# Pydantic schema for input validation
 class TransactionCreate(BaseModel):
     amount: float
     description: Optional[str] = None
     date: Optional[datetime] = None
 
-# Schemat Pydantic do odpowiedzi
+# Pydantic schema for response
 class TransactionResponse(BaseModel):
     id: int
     amount: float

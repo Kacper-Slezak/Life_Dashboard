@@ -52,15 +52,15 @@ async def create_api_connection(
     """
     Create or update an API connection for the authenticated user.
     """
-    # Sprawdzenie, czy połączenie z tym dostawcą już istnieje
+    # Check if connection with this provider already exists
     existing_connection = db.query(ApiConnection).filter(
         ApiConnection.user_id == current_user.id,
         ApiConnection.provider == connection_data.provider
     ).first()
 
     if existing_connection:
-        # Aktualizacja istniejącego połączenia
-        for key, value in connection_data.model_dump().items(): # Zmieniono .dict() na .model_dump()
+        # Update existing connection
+        for key, value in connection_data.model_dump().items(): # Changed .dict() to .model_dump()
             if value is not None:
                 setattr(existing_connection, key, value)
 
@@ -71,7 +71,7 @@ async def create_api_connection(
         db.refresh(existing_connection)
         return existing_connection
 
-    # Utworzenie nowego połączenia
+    # Create new connection
     new_connection = ApiConnection(
         user_id=current_user.id,
         **connection_data.model_dump() # Zmieniono .dict() na .model_dump()
@@ -91,7 +91,7 @@ async def delete_api_connection(
         db: Session = Depends(get_db)
 ):
     """
-    Usuwa połączenie API dla zalogowanego użytkownika.
+    Delete API connection for the authenticated user.
     """
     connection = db.query(ApiConnection).filter(
         ApiConnection.id == connection_id,
@@ -125,22 +125,22 @@ async def initialize_google_fit_auth(
     # Generowanie stanu dla zabezpieczenia CSRF
     state = secrets.token_urlsafe(16)
 
-    # Zapisz stan w bazie danych dla późniejszej weryfikacji
+    # Save state in database for later verification
     connection_data = {"auth_state": state}
 
-    # Sprawdź, czy istnieje już połączenie z Google Fit dla tego użytkownika
+    # Check if Google Fit connection already exists for this user
     existing_connection = db.query(ApiConnection).filter(
         ApiConnection.user_id == current_user.id,
         ApiConnection.provider == "google_fit"
     ).first()
 
     if existing_connection:
-        # Aktualizacja istniejącego połączenia
+        # Update existing connection
         existing_connection.connection_data = connection_data
         existing_connection.updated_at = datetime.now()
         db.commit()
     else:
-        # Utworzenie nowego połączenia (jeszcze bez tokenów)
+        # Create new connection (without tokens yet)
         new_connection = ApiConnection(
             user_id=current_user.id,
             provider="google_fit",
@@ -198,7 +198,7 @@ async def google_fit_callback(
 
     Exchanges the authorization code for access and refresh tokens.
     """
-    # Znajdź połączenie z tym stanem dla weryfikacji CSRF
+    # Find connection with this state for CSRF verification
     connection = db.query(ApiConnection).filter(
         ApiConnection.provider == "google_fit",
         ApiConnection.connection_data.op('->>')('auth_state') == state
@@ -225,7 +225,7 @@ async def google_fit_callback(
     print(f"DEBUG: Redirect URI (Callback): {redirect_uri}")
     print(f"DEBUG: Received 'code': {code}")
     print(f"DEBUG: Received 'state': {state}")
-    # Parametry żądania wymiany kodu na tokeny
+    # Token exchange request parameters
     token_params = {
         "code": code,
         "client_id": client_id,
@@ -241,7 +241,7 @@ async def google_fit_callback(
 
         token_data = response.json()
 
-        # Pobierz tokeny z odpowiedzi
+        # Get tokens from response
         access_token = token_data.get("access_token")
         refresh_token = token_data.get("refresh_token")
         expires_in = token_data.get("expires_in", 3600)
@@ -249,10 +249,10 @@ async def google_fit_callback(
         if not access_token:
             return RedirectResponse(url="/connections?auth_success=false")
 
-        # Oblicz datę wygaśnięcia tokenu
+        # Compute token expiration time
         token_expires_at = datetime.now() + timedelta(seconds=expires_in) if expires_in else None
 
-        # Aktualizuj połączenie w bazie danych
+        # Update connection in database
         connection.access_token = access_token
         connection.refresh_token = refresh_token
         connection.token_expires_at = token_expires_at
@@ -261,7 +261,7 @@ async def google_fit_callback(
 
         db.commit()
 
-        # Przekieruj użytkownika z powrotem do strony połączeń z informacją o sukcesie
+        # Redirect user back to connections page with success information
         return RedirectResponse(url="/connections?auth_success=true")
 
     except requests.RequestException as e:

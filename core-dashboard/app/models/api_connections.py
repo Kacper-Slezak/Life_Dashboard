@@ -13,7 +13,7 @@ class ApiConnection(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)  # Fixed to match user table name
-    provider = Column(String(50), nullable=False)  # np. 'google_fit', 'strava', itp.
+    provider = Column(String(50), nullable=False)  # e.g. 'google_fit', 'strava', etc.
 
     # Access tokens
     access_token = Column(String)
@@ -31,7 +31,7 @@ class ApiConnection(Base):
     user = relationship("User", back_populates="api_connections")
 
 
-# Schematy Pydantic
+# Pydantic schemas
 class ApiConnectionCreate(BaseModel):
     provider: str
     access_token: Optional[str] = None
