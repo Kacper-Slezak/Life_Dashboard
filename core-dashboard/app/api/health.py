@@ -19,7 +19,7 @@ async def get_dashboard_data(
             "daily_stats": data["daily_stats"],
             "charts": data["charts"]
         }
-    except HTTPException as e: # Najpierw łap HTTPException
+    except HTTPException as e: # Catch HTTPException first
         raise e
     except Exception as e:
         print(f"Unexpected error in /api/health/dashboard: {e}") # Log error

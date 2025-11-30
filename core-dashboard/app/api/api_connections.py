@@ -1,19 +1,18 @@
 # app/api/api_connections.py
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
-from sqlalchemy.orm import Session, relationship
+from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
 from app.services.auth import get_current_user
 from app.models.user import User
 from app.models.api_connections import ApiConnection, ApiConnectionCreate, ApiConnectionResponse
 from database.db_setup import get_db
-from typing import  Dict, Any, List
+from typing import Dict, Any, List
 import os
 import dotenv
 from datetime import datetime, timedelta
 import secrets
-from database.db_setup import Base
 import requests
 
 dotenv.load_dotenv()

@@ -1,7 +1,7 @@
 import requests
 import json 
 from datetime import datetime, timedelta, time
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models.api_connections import ApiConnection
 from database.db_setup import get_db, SessionLocal

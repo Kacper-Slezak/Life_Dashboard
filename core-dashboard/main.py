@@ -1,17 +1,16 @@
-from fastapi import FastAPI, Request, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, status
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.api.health import router as health_router
 from app.api.api_connections import router as api_connections_router
 from app.api.auth import router as auth_router
-from app.api.finance import router as finance_router  # NOWY IMPORT
-from database.db_setup import engine, Base  # ZMIENIONY IMPORT
-import app.models  # NOWY IMPORT (rejestruje wszystkie modele)
-from app.services.auth import get_current_user
+from app.api.finance import router as finance_router  # New import
+from database.db_setup import engine, Base  # Modified import
+import app.models  # New import (registers all models)
 import os
 
-# Importy dla monitoringu SRE
+# Imports for SRE monitoring
 from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 # Create directories if they don't exist
@@ -19,7 +18,7 @@ os.makedirs("templates", exist_ok=True)
 os.makedirs("static", exist_ok=True)
 
 # Create database tables
-# Ta jedna linia teraz stworzy WSZYSTKIE tabele (User, Health, ApiConnection, Transaction)
+# This one line will now create ALL tables (User, Health, ApiConnection, Transaction)
 app.models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Personal Health & Finance Dashboard",
@@ -29,7 +28,7 @@ app = FastAPI(title="Personal Health & Finance Dashboard",
 # --- SRE: Dodanie monitoringu Prometheus ---
 app.add_middleware(PrometheusMiddleware)
 app.add_route("/metrics", handle_metrics)
-# ------------------------------------------
+# ------------------------------------------------
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

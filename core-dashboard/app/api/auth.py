@@ -1,11 +1,9 @@
-from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException, status, Body, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from app.services.auth import create_access_token, get_current_user, verify_password, get_password_hash
 from database.db_setup import get_db
 from sqlalchemy.orm import Session
-from app.models.user import User, UserRegister, UserResponse, TokenData
+from app.models.user import User, UserRegister, UserResponse
 
 
 router = APIRouter(tags=["Auth"])
@@ -45,7 +43,7 @@ async def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
                 detail="A user with this email already exists"
             )
 
-    # Utworzenie nowego użytkownika
+    # Create new user
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
         username=user_data.username,
@@ -77,14 +75,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account is inactive",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+                detail="Account is inactive",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    # Generowanie tokenu JWT
-    access_token = create_access_token({"sub": user.username})
-
-    return {
+    # Generate JWT token
+    access_token = create_access_token({"sub": user.username})    return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": user
