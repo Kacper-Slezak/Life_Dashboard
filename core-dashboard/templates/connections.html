@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Połączenia API</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Zarządzaj połączeniami API</h1>
+
+        <!-- Sekcja Google Fit -->
+        <div class="connection-card">
+            <h2>Google Fit</h2>
+            <button onclick="initGoogleFitAuth()" id="google-fit-btn">
+                Autoryzuj z Google Fit
+            </button>
+            <div id="status-message"></div>
+        </div>
+
+        <!-- Button to go back to dashboard -->
+        <div class="navigation">
+            <a href="/dashboard" class="button">Powrót do panelu</a>
+        </div>
+    </div>
+
+    <script>
+        async function initGoogleFitAuth() {
+            try {
+                const response = await fetch('/api/api-connections/google-fit/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Błąd serwera');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('oauth_state', data.state);
+                window.location.href = data.auth_url;
+
+            } catch (error) {
+                showError(`Błąd: ${error.message}`);
+            }
+        }
+
+        async function loadConnections() {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    showError('Nie jesteś zalogowany. Przekierowanie do strony logowania...');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    return;
+                }
+
+                const response = await fetch('/api/api-connections/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        showError('Sesja wygasła. Przekierowanie do strony logowania...');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                        return;
+                    }
+                    throw new Error('Błąd ładowania danych');
+                }
+
+                const connections = await response.json();
+                const btn = document.getElementById('google-fit-btn');
+
+                // Sprawdź, czy istnieje połączenie Google Fit
+                const googleFitConn = connections.find(conn => conn.provider === 'google_fit');
+
+                if (googleFitConn) {
+                    btn.innerHTML = googleFitConn.is_active
+                        ? 'Połączono z Google Fit <span class="status-dot active"></span>'
+                        : 'Autoryzuj z Google Fit <span class="status-dot inactive"></span>';
+                } else {
+                    btn.innerHTML = 'Autoryzuj z Google Fit';
+                }
+
+            } catch (error) {
+                showError('Nie udało się załadować połączeń: ' + error.message);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('status-message');
+            errorDiv.innerHTML = `<div class="alert error">${message}</div>`;
+            setTimeout(() => errorDiv.innerHTML = '', 5000);
+        }
+
+        function showSuccess(message) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.innerHTML = `<div class="alert success">${message}</div>`;
+            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        }
+
+        // Sprawdź, czy użytkownik wrócił z procesu autoryzacji
+        function checkAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const authSuccess = urlParams.get('auth_success');
+
+            if (authSuccess === 'true') {
+                showSuccess('Połączenie z Google Fit zostało ustanowione pomyślnie!');
+                // Usuń parametry z URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (authSuccess === 'false') {
+                showError('Nie udało się połączyć z Google Fit. Spróbuj ponownie.');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        // Inicjalizacja po załadowaniu strony
+        window.addEventListener('load', () => {
+            loadConnections();
+            checkAuthCallback();
+        });
+    </script>
+</body>
+</html>

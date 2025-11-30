@@ -1,0 +1,28 @@
+/* connection-card */
+.connection-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+/* Przycisk Google Fit */
+#google-fit-btn {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#google-fit-btn:hover {
+    background: #357abd;
+}
+
+/* Status message */
+#status-message {
+    margin-top: 10px;
+}

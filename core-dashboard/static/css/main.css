@@ -1,0 +1,99 @@
+/* main.css */
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+header {
+    background-color: #4f81c7;
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+nav a {
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+nav a:hover {
+    color: #dfeeff;
+}
+
+main {
+    padding: 2rem;
+    text-align: center;
+}
+
+.intro h2 {
+    font-size: 1.8rem;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.intro p {
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+    color: #555;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.button.primary {
+    background-color: #4f81c7;
+    color: white;
+}
+
+.button.primary:hover {
+    background-color: #3a65a1;
+}
+
+.button.secondary {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.button.secondary:hover {
+    background-color: #c7c7c7;
+}
+
+footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: #eee;
+    color: #777;
+    margin-top: 3rem;
+}
