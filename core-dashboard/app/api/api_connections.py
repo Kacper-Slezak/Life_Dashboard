@@ -110,8 +110,6 @@ async def delete_api_connection(
     return None
 
 
-# Fix the initialize_google_fit_auth function in api_connections.py
-
 @router.post("/google-fit/auth", response_model=Dict[str, Any])
 async def initialize_google_fit_auth(
         request: Request,
@@ -188,7 +186,6 @@ async def initialize_google_fit_auth(
         "message": "Przejdź na podany URL, aby zalogować się do Google Fit"
     }
 
-# Update the callback route in api_connections.py to include a name
 
 @router.get("/google-fit/callback", name="google_fit_callback")
 async def google_fit_callback(
