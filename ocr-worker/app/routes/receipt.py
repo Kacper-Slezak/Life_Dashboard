@@ -6,6 +6,11 @@ from app.services.ocr_services import run_ocr, parse_ocr
 
 bp = Blueprint('api', __name__)
 
+@bp.route('/health', methods=['GET'])
+def health_check():
+    """Healthcheck endpoint for Docker"""
+    return jsonify({'status': 'ok'}), 200
+
 @bp.route('/process', methods=['POST'])
 def process_receipt():
     if 'file' not in request.files:

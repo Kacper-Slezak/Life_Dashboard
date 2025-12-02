@@ -11,9 +11,10 @@ from app.models.receipt import Receipt, ReceiptItem
 from database.db_setup import get_db
 
 
-router = APIRouter(tags="")
+router = APIRouter(prefix="/finance", tags=["finance"])
 
-@router.post("finance/transactions", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post("/transactions", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_transaction(
     transaction_data: TransactionCreate,
     current_user: User = Depends(get_current_user),
@@ -32,7 +33,7 @@ async def create_transaction(
     return new_transaction
 
 
-@router.get("finance/transactions", response_model=List[TransactionResponse])
+@router.get("/transactions", response_model=List[TransactionResponse])
 async def get_transactions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -47,7 +48,7 @@ async def get_transactions(
     return transactions
 
 
-@router.post("/finance/upload-receipt", status_code=status.HTTP_201_CREATED)
+@router.post("/upload-receipt", status_code=status.HTTP_201_CREATED)
 async def upload_receipt(
     file: Annotated[UploadFile, File()], 
     db: Annotated[Session, Depends(get_db)],

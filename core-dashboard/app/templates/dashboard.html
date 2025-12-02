@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - LifeOps</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Navbar -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-bold text-gray-800">LifeOps Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="username" class="text-gray-700"></span>
+                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Health Stats -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Steps Today</h3>
+                    <p id="steps" class="text-3xl font-bold text-green-600">Loading...</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Heart Rate</h3>
+                    <p id="heart-rate" class="text-3xl font-bold text-red-600">Loading...</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Sleep Hours</h3>
+                    <p id="sleep" class="text-3xl font-bold text-blue-600">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-4">Upload Receipt</h3>
+                    <input type="file" id="receipt-upload" accept="image/*" class="mb-4">
+                    <button onclick="uploadReceipt()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Upload & Process
+                    </button>
+                    <div id="upload-status" class="mt-4"></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-4">API Connections</h3>
+                    <a href="/connections" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 inline-block">
+                        Manage Connections
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        // Display username
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        document.getElementById('username').textContent = user.username || 'User';
+
+        // Load health data
+        async function loadHealthData() {
+            try {
+                const response = await fetch('/api/health/dashboard?days=7', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('steps').textContent = data.daily_stats?.steps || '0';
+                    document.getElementById('heart-rate').textContent = data.daily_stats?.avg_heart_rate || 'N/A';
+                    document.getElementById('sleep').textContent = data.daily_stats?.sleep_hours || '0';
+                } else if (response.status === 404) {
+                    document.getElementById('steps').textContent = 'Connect Google Fit';
+                }
+            } catch (error) {
+                console.error('Error loading health data:', error);
+            }
+        }
+
+        // Upload receipt
+        async function uploadReceipt() {
+            const fileInput = document.getElementById('receipt-upload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusDiv = document.getElementById('upload-status');
+            statusDiv.textContent = 'Uploading...';
+
+            try {
+                const response = await fetch('/api/finance/upload-receipt', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="text-green-600">✓ Receipt processed successfully!</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="text-red-600">✗ Error: ${result.detail}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="text-red-600">✗ Upload failed</div>`;
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // Load data on page load
+        loadHealthData();
+    </script>
+</body>
+</html>

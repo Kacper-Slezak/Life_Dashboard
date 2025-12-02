@@ -1,24 +1,30 @@
 services:
   ocr_worker:
     build:
-      context: ./ocr_worker
-      dockerfile: dockerfile
+      context: ./ocr-worker
+      dockerfile: Dockerfile
     container_name: lifeops_ocr
     restart: unless-stopped
     expose:
       - "5000"
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - lifeops_net
   
   core_dashboard:
     build:
-      context: ./core_dashboard
-      dockerfile: dockerfile
+      context: ./core-dashboard
+      dockerfile: Dockerfile
     container_name: lifeops_dashboard
     restart: unless-stopped
-    expose:
+    ports:
       - "8000:8000"
     env_file:
       - .env
@@ -32,12 +38,12 @@ services:
 
   db:
     image: postgres:15-alpine
-    container_name: lifeops_db 
+    container_name: lifeops_db
     restart: always
     env_file:
       - .env
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -45,17 +51,17 @@ services:
       retries: 5
     networks:
       - lifeops_net
-  
+
   prometheus:
     image: prom/prometheus:latest
     container_name: lifeops_prometheus
     restart: unless-stopped
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    expose:
-      - "9090"
+    ports:
+      - "9090:9090"
     networks:
       - lifeops_net
   
@@ -67,7 +73,7 @@ services:
       - .env
     volumes:
       - grafana_data:/var/lib/grafana
-    expose:
+    ports:
       - "3000:3000"
     depends_on:
       - prometheus
@@ -76,7 +82,7 @@ services:
       - lifeops_net
 
 volumes:
-  postgres:
+  postgres_data:
   grafana_data:
 
 networks:

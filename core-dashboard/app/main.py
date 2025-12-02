@@ -31,9 +31,7 @@ app.add_route("/metrics", handle_metrics)
 # ------------------------------------------------
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Initialize templates
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 # Add routers
