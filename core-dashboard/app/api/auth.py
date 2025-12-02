@@ -3,12 +3,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.services.auth import create_access_token, get_current_user, verify_password, get_password_hash
 from database.db_setup import get_db
 from sqlalchemy.orm import Session
-from app.models.user import User, UserRegister, UserResponse
+from app.models.user import TokenData, User, UserRegister, UserResponse
 
 
 router = APIRouter(tags=["Auth"])
-
-
 
 
 @router.post("/register", response_model=UserResponse)
@@ -80,7 +78,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             )
 
     # Generate JWT token
-    access_token = create_access_token({"sub": user.username})    return {
+    access_token = create_access_token({"sub": user.username})
+    
+    return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": user

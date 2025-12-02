@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
-from typing import Annotated, List, File
+from typing import Annotated, List
 from datetime import datetime
 
 from app.services.auth import get_current_user
@@ -50,7 +50,7 @@ async def get_transactions(
 
 @router.post("/upload-receipt", status_code=status.HTTP_201_CREATED)
 async def upload_receipt(
-    file: Annotated[UploadFile, File()], 
+    file: Annotated[UploadFile, Depends()],
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)]
 ):
