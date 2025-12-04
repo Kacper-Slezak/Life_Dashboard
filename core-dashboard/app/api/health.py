@@ -5,7 +5,7 @@ from app.services.health import GoogleFitServices
 from app.services.auth import get_current_user
 from app.models.user import User # <-- Important import
 
-router = APIRouter()
+router = APIRouter(prefix="/health")
 
 @router.get("/dashboard")
 async def get_dashboard_data(

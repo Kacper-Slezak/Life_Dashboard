@@ -64,9 +64,9 @@ async def register_page(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def show_dashboard(request: Request):
     """
-    Display health dashboard
+    Display dashboard
     """
-    return templates.TemplateResponse("health_dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @app.get("/connections", response_class=HTMLResponse)
 async def connections_page(request: Request):

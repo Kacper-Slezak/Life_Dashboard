@@ -18,8 +18,6 @@ import requests
 dotenv.load_dotenv()
 
 
-
-
 # Router for API connections
 router = APIRouter(
     prefix="/api-connections",
@@ -149,8 +147,8 @@ async def initialize_google_fit_auth(
         db.commit()
 
     # Adres zwrotny, na który Google przekieruje użytkownika po autoryzacji
-    # Construct the redirect URI manually instead of using url_for
-    base_url = os.getenv('APP_BASE_URL', 'http://localhost:8080')
+    # FIX: Changed default port from 8080 to 8000, which is the container's exposed port.
+    base_url = os.getenv('APP_BASE_URL', 'http://localhost:8000') 
     redirect_uri = f"{base_url}/api/api-connections/google-fit/callback"
 
     # Zakres uprawnień dla Google Fit
@@ -171,7 +169,6 @@ async def initialize_google_fit_auth(
         )
 
     # URL autoryzacji Google
-    ...
     auth_url = f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={'%20'.join(scopes)}&state={state}&access_type=offline&prompt=consent"
 
     # Debug prints
@@ -217,7 +214,8 @@ async def google_fit_callback(
         return RedirectResponse(url="/connections?auth_success=false")
 
     # Pełny URL do callbacku
-    base_url = os.getenv('APP_BASE_URL', 'http://localhost:8080')
+    # FIX: Changed default port from 8080 to 8000, which is the container's exposed port.
+    base_url = os.getenv('APP_BASE_URL', 'http://localhost:8000') 
     redirect_uri = f"{base_url}/api/api-connections/google-fit/callback"
 
     # Debug prints
